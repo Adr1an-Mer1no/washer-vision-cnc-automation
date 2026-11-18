@@ -1,14 +1,16 @@
 # Washer Vision & CNC XY Alignment — Team 9
 
-## Status and critical firmware warning
+## Status and firmware verification
 
 **Phase 19 completed one physically confirmed washer-centering trial.** Repeatability and automatic pickup have **not** been validated. Phase 20 continuous alignment is **not implemented** here. The camera-to-machine mapping remains provisional (`verified: false`).
 
-**IMPORTANT — DO NOT FLASH THE INCLUDED `joystick_serial_bridge.ino` FOR PHASE 19 MOTION.** Inspection shows it explicitly rejects serial motion commands and lacks the `RESETSTOP`, `HOME XY`, `MOVE`, and detailed `STATUS` protocol used by Phase 19. The *actual firmware that produced the successful Phase 19 trial was not present in the uploaded ZIP*. Obtain the running Arduino sketch from the original machine/operator, review it, and verify its protocol and safety features before attempting hardware operation. This repository is **not yet a complete hardware-reproducible release**.
+The supplied `arduino/WasherVision_Phase7_Z_BottomLimit_Fix.ino` implements the serial commands and detailed status fields expected by Phase 19: `MODE AUTO`, `RESETSTOP`, `HOME XY`, `MOVE`, `STATUS`, and `STOP`. The code was reviewed for command compatibility, **but it has not been confirmed byte-for-byte as the sketch currently flashed on the Arduino, nor retested after this upload**. Do not flash or replace working firmware solely because this file is present. Confirm with the original operator and perform controlled bench checks before use.
+
+**Do not use `joystick_serial_bridge.ino` for Phase 19 motion.** It is an older diagnostic/manual bridge with incompatible commands. It remains at the repository root for reference.
 
 ## Repository layout
 
-The files are uploaded at the **repository root** (there are no `models/`, `arduino/`, or `tests/` subdirectories in the current GitHub layout). The camera script defaults to looking for `models/best.pt`, so the explicit `--model best.pt` option shown below is necessary for this layout.
+Most Python files, model weights and tests are at the **repository root**. The supplied Phase 7 Arduino sketch is under `arduino/`. The camera script defaults to looking for `models/best.pt`, so the explicit `--model best.pt` option shown below is necessary for this layout.
 
 ## Included components
 
@@ -18,7 +20,8 @@ The files are uploaded at the **repository root** (there are no `models/`, `ardu
 - `vision_utils.py`, `dimension_check.py`, `dimension_calibration.py`, `class_fusion.py` — vision dependencies
 - `best.pt` — trained YOLO weights
 - `calibration.json`, `camera_machine_mapping_phase19_y_reversed.json`, `camera_machine_mapping_calibrated.json` — local calibration, **not portable without recalibration**
-- `joystick_serial_bridge.ino` — **older diagnostic/manual bridge only; incompatible with Phase 19**
+- `arduino/WasherVision_Phase7_Z_BottomLimit_Fix.ino` — **supplied candidate compatible firmware; verify against flashed sketch and test safely**
+- `joystick_serial_bridge.ino` — older diagnostic/manual bridge only; incompatible with Phase 19
 - `test_*.py` — existing software tests; not a hardware safety certification
 
 ## Environment (macOS)
@@ -38,7 +41,7 @@ python phase13_vision_auto_feed.py --model best.pt --width-mm 101.6 --height-mm 
 
 This loads the uploaded `calibration.json` and periodically writes `washer_coordinates_fusion.csv` when a single calibrated washer is detected. The `--auto-save-seconds 1` option is required for periodic CSV updates; the script's default is 0 (disabled). Check camera image size, calibration corners and workspace dimensions against the actual setup; the above command is a starting point, **not a verified launch record from the successful trial**. Keep the feed running while using `PREVIEW` or `ALIGN XY`.
 
-## Phase 19 controller (ONLY after compatible firmware is restored and safety checked)
+## Phase 19 controller (ONLY after installed firmware and safety are verified)
 
 ```bash
 python phase19_corrected_xy_alignment.py --port /dev/cu.usbmodem1301
@@ -50,7 +53,7 @@ Opening serial resets the Arduino. In `Phase19>` use `STATUS`, `MODE AUTO`, `RES
 
 ## Handoff and next development
 
-1. Recover and version-control the **actual running Arduino firmware**. Do not substitute the included diagnostic bridge.
+1. Confirm the Phase 7 sketch matches the **actual firmware currently running on the Arduino**, including pinout, switch polarity and motion protocol; do not flash the diagnostic bridge. Review and bench-test any firmware changes before powering motors.
 2. Confirm camera calibration and machine coordinate mapping on the specific hardware.
 3. Run five supervised XY repeatability trials and log targets, final counters and physical centering in `phase20_repeatability_results.csv`.
 4. Develop Phase 20 as a separate controller to reuse the verified current XY position without homing between washers; maintain STOP, freshness, movement and position checks.
