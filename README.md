@@ -4,7 +4,11 @@
 
 **Phase 19 completed one physically confirmed washer-centering trial.** Repeatability and automatic pickup have **not** been validated. Phase 20 continuous alignment is **not implemented** here. The camera-to-machine mapping remains provisional (`verified: false`).
 
-**IMPORTANT — DO NOT FLASH THE INCLUDED `arduino/joystick_serial_bridge.ino` FOR PHASE 19 MOTION.** Inspection shows it explicitly rejects serial motion commands and lacks the `RESETSTOP`, `HOME XY`, `MOVE`, and detailed `STATUS` protocol used by Phase 19. The *actual firmware that produced the successful Phase 19 trial was not present in the uploaded ZIP*. Obtain the running Arduino sketch from the original machine/operator, review it, and verify its protocol and safety features before attempting hardware operation. This repository is **not yet a complete hardware-reproducible release**.
+**IMPORTANT — DO NOT FLASH THE INCLUDED `joystick_serial_bridge.ino` FOR PHASE 19 MOTION.** Inspection shows it explicitly rejects serial motion commands and lacks the `RESETSTOP`, `HOME XY`, `MOVE`, and detailed `STATUS` protocol used by Phase 19. The *actual firmware that produced the successful Phase 19 trial was not present in the uploaded ZIP*. Obtain the running Arduino sketch from the original machine/operator, review it, and verify its protocol and safety features before attempting hardware operation. This repository is **not yet a complete hardware-reproducible release**.
+
+## Repository layout
+
+The files are uploaded at the **repository root** (there are no `models/`, `arduino/`, or `tests/` subdirectories in the current GitHub layout). The camera script defaults to looking for `models/best.pt`, so the explicit `--model best.pt` option shown below is necessary for this layout.
 
 ## Included components
 
@@ -12,10 +16,10 @@
 - `phase5_supervised_controller.py`, `phase10_supervised_xy_alignment.py`, `phase12_integrated_xy_alignment_go_to_view.py`, `phase5_bridge_calibrated.py` — Phase 19 Python dependencies
 - `phase13_vision_auto_feed.py` — YOLO camera feed and fusion CSV producer
 - `vision_utils.py`, `dimension_check.py`, `dimension_calibration.py`, `class_fusion.py` — vision dependencies
-- `models/best.pt` — trained YOLO weights
+- `best.pt` — trained YOLO weights
 - `calibration.json`, `camera_machine_mapping_phase19_y_reversed.json`, `camera_machine_mapping_calibrated.json` — local calibration, **not portable without recalibration**
-- `arduino/joystick_serial_bridge.ino` — **older diagnostic/manual bridge only; incompatible with Phase 19**
-- `tests/` — existing software tests; not a hardware safety certification
+- `joystick_serial_bridge.ino` — **older diagnostic/manual bridge only; incompatible with Phase 19**
+- `test_*.py` — existing software tests; not a hardware safety certification
 
 ## Environment (macOS)
 
@@ -29,10 +33,10 @@ Check webcam access, the Arduino device path, machine-specific calibration and a
 ## Camera feed (separate Terminal)
 
 ```bash
-python phase13_vision_auto_feed.py --width-mm 101.6 --height-mm 127
+python phase13_vision_auto_feed.py --model best.pt --width-mm 101.6 --height-mm 127 --auto-save-seconds 1
 ```
 
-This uses the uploaded `calibration.json` and writes `washer_coordinates_fusion.csv`. Check camera image size, calibration corners and workspace dimensions against the actual setup; the above command is a starting point, **not a verified launch record from the successful trial**. Keep the feed running while using `PREVIEW` or `ALIGN XY`.
+This loads the uploaded `calibration.json` and periodically writes `washer_coordinates_fusion.csv` when a single calibrated washer is detected. The `--auto-save-seconds 1` option is required for periodic CSV updates; the script's default is 0 (disabled). Check camera image size, calibration corners and workspace dimensions against the actual setup; the above command is a starting point, **not a verified launch record from the successful trial**. Keep the feed running while using `PREVIEW` or `ALIGN XY`.
 
 ## Phase 19 controller (ONLY after compatible firmware is restored and safety checked)
 
